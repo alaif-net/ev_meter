@@ -1,0 +1,167 @@
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>露出計っぽいやつ</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@6.9.96/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="box">
+            <h1 class="title">露出計っぽいやつ</h1>
+            <div class="field">
+                <label class="label" for="iso-value">ISO感度</label>
+                <div class="control">
+                    <input id="iso-value" type="number" min="1" max="1600" value="100" required><br>        
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">シャッタースピード系列</label>
+                <div class="control">
+                <label class="radio">
+                  <input id="sutter-series_1" type="radio" name="shutter-series" checked>
+                  倍数系列
+                </label>
+                <label class="radio">
+                  <input id="sutter-series_2" type="radio" name="shutter-series">
+                  大陸系列
+                </label>
+              </div>
+            </div>
+
+            <div class="field">
+                <div class="control">
+                    <label for="shoot-photo" class="button is-dark">
+                        <span class="icon">
+                            <i class="mdi mdi-camera"></i>
+                        </span>
+                        <span>撮影</span>
+                    </label>
+                    <input id="shoot-photo" type="file" accept="image/jpeg" capture="camera" style="display: none">        
+                </div>
+            </div>
+        </div>
+        <div class="box">
+            <p id="dump-exif" class="is-size-3 has-text-weight-semibold">Ev=-</p>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>シャッタースピード</th>
+                        <th>F値</th>
+                    </tr>
+                </thead>
+                <tbody id="time_fvalue_content">
+                    <tr>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>    
+                </tbody>
+              </table>
+        </div>
+    </div>
+</body>
+
+</html>
+
+<script src="https://cdn.jsdelivr.net/npm/exifr/dist/lite.umd.js"></script>
+<script>
+
+let iso_value = document.querySelector('#iso-value')
+let shoot_photo = document.querySelector('#shoot-photo')
+let shutter_series_1 = document.querySelector("#sutter-series_1")
+let shutter_series_2 = document.querySelector("#sutter-series_2")
+let time_fvalue_content = document.querySelector("#time_fvalue_content")
+
+function expTimeToTv(time_sec) {
+    it = 1 / time_sec
+    return Math.log2(it)
+}
+
+function fNumToAv(fnumber) {
+    return Math.log(fnumber) / Math.log(Math.pow(2, 0.5))
+}
+
+function avToFNum(av) {
+    return Math.pow(Math.pow(2, 0.5), av)
+}
+
+function isoToSv(iso_value) {
+    return Math.log2(iso_value / 100)
+}
+
+async function processFile(arg) {
+    var img;
+    if (arg instanceof Blob) {
+        img = arg
+    } else {
+        return
+    }
+
+    d = await exifr.parse(img)
+    iso_num = d.ISO
+    exp_time = d.ExposureTime
+    f_num = d.FNumber
+
+    tv = expTimeToTv(exp_time)
+    av = fNumToAv(f_num)
+    sv = isoToSv(iso_num)
+
+    ev = tv + av - sv
+    ev = Math.round(ev * 3) / 3
+
+    var exp_time_list
+    if (shutter_series_1.checked) {
+        exp_time_list = [1/1000, 1/500, 1/250, 1/125, 1/60, 1/30, 1/15, 1/8, 1/4, 1/2, 1/1]
+    } else {
+        exp_time_list = [1/500, 1/300, 1/250, 1/200, 1/100, 1/50, 1/25, 1/10, 1/5, 1/2, 1/1]
+    }
+
+    console.log(`ISO: ${iso_num}`)
+    console.log(`F${f_num}`)
+    console.log(`Tv=${tv}, Av=${av}, Sv=${sv}`)
+
+    lines = [
+        `Ev=${ev.toFixed(1)}`
+    ]
+
+    var time_f_lines = []
+    tiso = iso_value.valueAsNumber
+    exp_time_list.forEach(exp_time => {
+        ttv = expTimeToTv(exp_time)
+        tsv = isoToSv(tiso)
+        tav = ev + tsv - ttv
+        tav = Math.round(tav * 3) / 3
+        fv = avToFNum(tav)
+        if ((fv >= 1.0) && (fv <= 64)) {
+            time_f_lines.push(`<tr><td>1/${1/exp_time}</td><td>F${fv.toFixed(1)}</td></tr>`)
+        }
+    })
+
+    document.querySelector("#dump-exif").innerHTML = lines.join('\r\n')
+    time_fvalue_content.innerHTML = time_f_lines.join('\r\n')
+}
+
+shoot_photo.addEventListener('change', async e => {
+    processFile(e.target.files[0])
+})
+
+iso_value.addEventListener('change', async e => {
+    if (shoot_photo.files != null) {
+        processFile(shoot_photo.files[0])
+    }
+})
+
+shutter_series_1.addEventListener('change', async e => {
+    if (shoot_photo.files != null) {
+        processFile(shoot_photo.files[0])
+    }
+})
+
+shutter_series_2.addEventListener('change', async e => {
+    if (shoot_photo.files != null) {
+        processFile(shoot_photo.files[0])
+    }
+})
+</script>
