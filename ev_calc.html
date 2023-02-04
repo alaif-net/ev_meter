@@ -40,6 +40,13 @@
                         <span>撮影</span>
                     </label>
                     <input id="shoot-photo" type="file" accept="image/jpeg" capture="camera" style="display: none">        
+                    <label for="select-photo" class="button is-dark">
+                        <span class="icon">
+                            <i class="mdi mdi-image"></i>
+                        </span>
+                        <span>写真を選択</span>
+                    </label>
+                    <input id="select-photo" type="file" accept="image/jpeg" style="display: none">        
                 </div>
             </div>
         </div>
@@ -70,9 +77,12 @@
 
 let iso_value = document.querySelector('#iso-value')
 let shoot_photo = document.querySelector('#shoot-photo')
+let select_photo = document.querySelector('#select-photo')
 let shutter_series_1 = document.querySelector("#sutter-series_1")
 let shutter_series_2 = document.querySelector("#sutter-series_2")
 let time_fvalue_content = document.querySelector("#time_fvalue_content")
+
+var img_file = null
 
 function expTimeToTv(time_sec) {
     it = 1 / time_sec
@@ -144,24 +154,30 @@ async function processFile(arg) {
 }
 
 shoot_photo.addEventListener('change', async e => {
-    processFile(e.target.files[0])
+    img_file = e.target.files[0]
+    processFile(img_file)
+})
+
+select_photo.addEventListener('change', async e => {
+    img_file = e.target.files[0]
+    processFile(img_file)
 })
 
 iso_value.addEventListener('change', async e => {
-    if (shoot_photo.files != null) {
-        processFile(shoot_photo.files[0])
+    if (img_file != null) {
+        processFile(img_file)
     }
 })
 
 shutter_series_1.addEventListener('change', async e => {
-    if (shoot_photo.files != null) {
-        processFile(shoot_photo.files[0])
+    if (img_file != null) {
+        processFile(img_file)
     }
 })
 
 shutter_series_2.addEventListener('change', async e => {
-    if (shoot_photo.files != null) {
-        processFile(shoot_photo.files[0])
+    if (img_file != null) {
+        processFile(img_file)
     }
 })
 </script>
